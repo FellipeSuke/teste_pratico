@@ -2,71 +2,129 @@
 
 namespace EISOL_TestePraticoWebForms
 {
-	public partial class Tarefa1 : System.Web.UI.Page
-	{
-		protected void Page_Load(object sender, EventArgs e)
-		{
-			// Para saber se o seu registro foi realmente adicionado à tabela, utilize um dos métodos de BLL.PESSOAS.
-			// Você poderá realizar a depuração aqui no VS e conferir se tudo deu certo.
-			// Sinta-se livre para fazer a sua arte, mas tente fazer o formulário funcionar ok!
-		}
+    public partial class Tarefa1 : System.Web.UI.Page
+    {
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            // Código de inicialização, se necessário.
+        }
 
-		protected void btnGravar_Click(object sender, EventArgs e)
-		{
-			/* Olá!
-             * Trabalhamos com camadas de acesso a dados e negócios, isso também é conhecido por arquitetura em camadas ou N-Tier.
-             * Observe que passamos um objeto tipado da camada de acesso (DAO - Data Access Object).
-             * E devemos utilizar esse objeto DAO e chamar os métodos da camada de negócios (BLL - Business Logical Layer).
-             * É o que por padrão o MVC te induz a fazer, mas aqui no WebForms devemos ter esse cuidado para não dificultar as coisas criando códigos macarrônicos (eita).
-             * Você está livre para espiar os códigos e entender o seu funcionamento.
-             * Só não vai me bagunçar os códigos pois deu muito trabalho fazer tudo isso aqui =/
-             * */
-			var pessoa = new DAO.PESSOAS();
+        protected void btnGravar_Click(object sender, EventArgs e)
+        {
+            // Validação de campos obrigatórios no servidor
+            if (!ValidarCampos())
+            {
+                return;
+            }
 
-			// Parece que faltam algumas coisas aqui! =/
+            // Preenchendo o objeto pessoa
+            var pessoa = new DAO.PESSOAS
+            {
+                NOME = LimitarTamanho(txtNome.Text, 200),
+                CPF = LimitarTamanho(txtCpf.Text, 11),
+                RG = LimitarTamanho(txtRg.Text, 15),
+                TELEFONE = LimitarTamanho(txtTelefone.Text, 20),
+                EMAIL = LimitarTamanho(txtEmail.Text, 200),
+                SEXO = ddlSexo.SelectedValue,
+                DATA_NASCIMENTO = ObterDataNascimento(txtDataNascimento.Text)
+            };
 
-			// O Objeto pessoa não parece ser uma pessoa de verdade ainda. 
-			// As pessoas não são objetos mas aqui podemos considerá-las assim =S
-			// - Faça as devidas atribuições ao objeto 'pessoa' para que ela seja uma pessoa de verdade e feliz!
+            // Persistindo os dados
+            Gravar(pessoa);
 
-			// Verifique os tamanhos dos campos da tabela e a obrigatoriedade deles e faça o devido tratamento para evitar erros.
-			// - O leiaute da tabela em questão (TB_TESTE_PESSOAS) poderá ser verificado nos arquivos .sql anexados ao projeto.
+            // Limpar os campos após salvar os dados
+            Limpar();
+        }
 
-			/* SEU OBJETIVO (TAREFA 1)
-             * Envie um objeto com dados, passando pela camada de negócios e que possibilite salvar os dados do formulário preenchido no banco de dados.
-             */
+        /// <summary>
+        /// Valida os campos obrigatórios.
+        /// </summary>
+        /// <returns>True se todos os campos obrigatórios estão preenchidos, caso contrário false.</returns>
+        private bool ValidarCampos()
+        {
+            if (string.IsNullOrWhiteSpace(txtNome.Text))
+            {
+                MostrarErro("Preencha o campo NOME");
+                return false;
+            }
 
-			// Coloque o seu lindo código aqui! (O_o)
+            if (string.IsNullOrWhiteSpace(txtCpf.Text))
+            {
+                MostrarErro("Preencha o campo CPF");
+                return false;
+            }
 
-			this.Gravar(pessoa);
-		}
+            return true;
+        }
 
-		/// <summary>
-		/// Persistir os dados no Banco.
-		/// </summary>
-		/// <param name="pessoa">DAO.PESSOAS</param>
-		private void Gravar(DAO.PESSOAS pessoa)
-		{
-			// Se a pessoa for uma pessoa de verdade e feliz, com certeza ela será lembrada pelo banco de dados.
-			new BLL.PESSOAS().Adicionar(pessoa);
-			this.Alertar();
-		}
+        /// <summary>
+        /// Mostra a mensagem de erro.
+        /// </summary>
+        /// <param name="mensagem">A mensagem de erro.</param>
+        private void MostrarErro(string mensagem)
+        {
+            msgErro.Text = mensagem;
+            msgErro.Visible = true;
+        }
 
-		/// <summary>
-		/// Apresentar o alerta de sucesso na operação.
-		/// </summary>
-		private void Alertar()
-		{
-			this.divAlerta.Visible = true;
-		}
+        /// <summary>
+        /// Limita o tamanho do texto.
+        /// </summary>
+        /// <param name="texto">Texto a ser limitado.</param>
+        /// <param name="tamanhoMaximo">Tamanho máximo permitido.</param>
+        /// <returns>Texto limitado ao tamanho máximo.</returns>
+        private string LimitarTamanho(string texto, int tamanhoMaximo)
+        {
+            return texto.Length > tamanhoMaximo ? texto.Substring(0, tamanhoMaximo) : texto;
+        }
 
-		/// <summary>
-		/// Limpar os campos após a presistência dos dados.
-		/// </summary>
-		private void Limpar()
-		{
-			// Isso é apenas um bônus!
-			// Tente fazê-lo e colocar em um lugar apropriado no código.
-		}
-	}
+        /// <summary>
+        /// Converte a string de data em DateTime. Se inválida, retorna a data mínima.
+        /// </summary>
+        /// <param name="dataNascimento">Texto com a data de nascimento.</param>
+        /// <returns>Data de nascimento ou DateTime.MinValue se inválido.</returns>
+        private DateTime ObterDataNascimento(string dataNascimento)
+        {
+            DateTime data;
+            if (DateTime.TryParse(dataNascimento, out data))
+            {
+                return data;
+            }
+            return DateTime.MinValue; // Caso a data seja inválida, retorna o valor mínimo
+        }
+
+        /// <summary>
+        /// Persiste os dados no banco de dados.
+        /// </summary>
+        /// <param name="pessoa">Objeto DAO.PESSOAS contendo os dados a serem persistidos.</param>
+        private void Gravar(DAO.PESSOAS pessoa)
+        {
+            new BLL.PESSOAS().Adicionar(pessoa);
+            Alertar();
+        }
+
+        /// <summary>
+        /// Exibe o alerta de sucesso após a persistência dos dados.
+        /// </summary>
+        private void Alertar()
+        {
+            divAlerta.Visible = true;
+        }
+
+        /// <summary>
+        /// Limpa todos os campos do formulário.
+        /// </summary>
+        private void Limpar()
+        {
+            txtNome.Text = string.Empty;
+            txtCpf.Text = string.Empty;
+            txtRg.Text = string.Empty;
+            txtTelefone.Text = string.Empty;
+            txtEmail.Text = string.Empty;
+            ddlSexo.SelectedIndex = 0;
+            txtDataNascimento.Text = string.Empty;
+            msgErro.Visible = false;
+            divAlerta.Visible = false;
+        }
+    }
 }
